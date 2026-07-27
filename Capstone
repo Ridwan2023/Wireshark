@@ -1,0 +1,70 @@
+# Navigate to your repo
+cd Wireshark
+
+# Write the file content directly
+cat > labs/15-capstone-investigation.md << 'EOF'
+# Lab 15: Capstone — Full Packet Capture Investigation
+
+## Objective
+Apply everything from Labs 01–14 to conduct an end-to-end investigation of a mixed packet capture, identifying protocols, reconstructing a timeline of events, and spotting suspicious activity.
+
+## Tools
+- Wireshark
+- A larger, mixed-traffic pcap file — either one you've built by combining your own captures, or a sample investigation pcap from a reputable security research source
+
+## Background
+Real-world investigations rarely involve one clean protocol at a time. An analyst has to triage a capture, identify what's normal, and isolate what's not — pulling together every skill from basic capturing to spoofing detection to C2 pattern recognition.
+
+## Steps
+
+### Part 1: Initial Triage
+1. Open the capture and check **Statistics → Protocol Hierarchy** to see what protocols are present and their relative volume.
+2. Check **Statistics → Conversations** to identify the top talkers (busiest IP pairs).
+3. Check **Statistics → Endpoints** for a full list of hosts involved.
+
+### Part 2: Building a Timeline
+1. Sort the packet list by time and scan for major events:
+   - DHCP negotiation (Lab 09) — when did each device join the network?
+   - DNS queries (Lab 03, Lab 12) — what domains were being resolved, and were any suspicious?
+   - TCP/TLS handshakes (Lab 05, Lab 06) — what connections were established?
+2. Note timestamps of anything unusual for your final report.
+
+### Part 3: Threat Hunting Pass
+Apply detection techniques from earlier labs:
+1. **ARP** (Lab 10): any duplicate/conflicting IP-to-MAC mappings?
+2. **DNS** (Lab 12): any abnormally long or high-entropy subdomains?
+3. **HTTP/TLS** (Lab 13): any beaconing patterns, suspicious User-Agents, or SNI mismatches?
+4. **Cleartext protocols** (Lab 11): any FTP/Telnet sessions exposing credentials?
+5. **Port scanning** (Lab 07): any hosts probing multiple ports/IPs in a short window?
+
+### Part 4: Writing the Findings
+Summarize your investigation in a short report covering:
+1. What hosts and protocols were present
+2. A timeline of key events
+3. Any suspicious findings, with the supporting filter/evidence for each
+4. Recommended next steps (e.g., isolate a host, block a domain, review firewall rules)
+
+## Key Filters (Cheat Sheet from the Series)
+| Filter | Purpose |
+|---|---|
+| `arp.duplicate-address-detected` | Possible ARP spoofing |
+| `dns.qry.name.len > 50` | Suspicious long DNS queries |
+| `icmp.type == 11` | Traceroute hops |
+| `ftp \|\| telnet` | Cleartext credential exposure |
+| `tcp.flags.syn == 1 && tcp.flags.ack == 0` | Possible port scan (SYN-only packets) |
+| `tls.handshake.extensions_server_name` | TLS SNI inspection |
+
+## Analysis Questions
+1. What was the single most suspicious finding in your capture, and why?
+2. If you had to prioritize one host for further investigation, which would it be and why?
+3. What additional data sources (beyond the pcap) would strengthen your investigation (e.g., logs, threat intel feeds)?
+4. How would your findings change your recommendations for network defenses?
+
+## Security Note
+As with all detection-focused labs in this series, only analyze traffic you own, have permission to review, or that comes from a legitimate public research dataset. This capstone is meant to demonstrate analytical skill, not to encourage unauthorized network monitoring.
+EOF
+
+# Stage, commit, and push
+git add labs/15-capstone-investigation.md
+git commit -m "Add Lab 15: Capstone - Full Packet Capture Investigation"
+git push origin main
