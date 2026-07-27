@@ -1,0 +1,78 @@
+# Navigate to your repo
+cd Wireshark
+
+# Write the file content directly
+cat > labs/09-dhcp-analysis.md << 'EOF'
+# Lab 09: DHCP Analysis
+
+## Objective
+Understand how devices automatically obtain IP configuration from a DHCP server, and analyze the DHCP process (DORA) at the packet level using Wireshark.
+
+## Tools
+- Wireshark
+- A device that can release/renew its IP (or a virtual machine you can restart networking on)
+
+## Background
+DHCP (Dynamic Host Configuration Protocol) automates IP address assignment. The process follows four steps, known as **DORA**:
+- **Discover** — client broadcasts a request for an IP
+- **Offer** — server offers an available IP
+- **Request** — client formally requests that IP
+- **Acknowledge** — server confirms the assignment
+
+DHCP runs over UDP, using port 67 (server) and port 68 (client).
+
+## Steps
+
+### Part 1: Capturing the DORA Process
+1. Start a Wireshark capture on your active interface.
+2. Force a new DHCP negotiation:
+   - Linux: `sudo dhclient -r && sudo dhclient`
+   - Windows: `ipconfig /release` then `ipconfig /renew`
+   - Mac: toggle Wi-Fi off/on, or use `sudo ipconfig set en0 DHCP`
+3. Stop the capture once your device gets an IP.
+4. Filter with: `bootp` or `dhcp`
+
+**What to observe:**
+- Four packets in sequence: Discover, Offer, Request, Ack
+- Discover and Request are broadcast to `255.255.255.255`
+- Offer and Ack come from the DHCP server's IP
+
+### Part 2: Inspecting Packet Details
+1. Click on the **DHCP Discover** packet. Expand the "Bootstrap Protocol" layer.
+2. Note the client's MAC address (since it has no IP yet).
+3. Click on the **DHCP Offer** packet.
+4. Note the offered IP address, subnet mask, lease time, and DHCP server identifier.
+5. Click on the **DHCP Ack** packet and confirm it matches the offer.
+
+### Part 3: Analyzing Lease Options
+1. In the DHCP Offer or Ack packet, expand "Option" fields.
+2. Identify:
+   - Option 1: Subnet Mask
+   - Option 3: Router (default gateway)
+   - Option 6: DNS Server(s)
+   - Option 51: IP Address Lease Time
+   - Option 53: DHCP Message Type
+
+## Key Filters
+| Filter | Purpose |
+|---|---|
+| `bootp` or `dhcp` | Show all DHCP traffic |
+| `dhcp.option.dhcp == 1` | Discover packets |
+| `dhcp.option.dhcp == 2` | Offer packets |
+| `dhcp.option.dhcp == 3` | Request packets |
+| `dhcp.option.dhcp == 5` | Ack packets |
+
+## Analysis Questions
+1. Why does the client use broadcast addresses instead of unicast during Discover and Request?
+2. What information does the DHCP server provide besides the IP address?
+3. What happens if two DHCP servers respond to the same Discover message?
+4. What security risk does a **rogue DHCP server** pose on a network?
+
+## Security Note
+Rogue DHCP servers are a common attack vector — an attacker can hand out a malicious default gateway or DNS server, redirecting victim traffic for interception (a form of man-in-the-middle attack). This ties directly into the ARP spoofing / MITM topic planned for Lab 10.
+EOF
+
+# Stage, commit, and push
+git add labs/09-dhcp-analysis.md
+git commit -m "Add Lab 09: DHCP Analysis"
+git push origin main
