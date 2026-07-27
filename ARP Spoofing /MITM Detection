@@ -1,0 +1,60 @@
+# Navigate to your repo
+cd Wireshark
+
+# Write the file content directly
+cat > labs/10-arp-spoofing-mitm.md << 'EOF'
+# Lab 10: ARP Spoofing / MITM Detection
+
+## Objective
+Understand how ARP spoofing enables man-in-the-middle (MITM) attacks, and learn to detect signs of ARP spoofing in Wireshark captures.
+
+## Tools
+- Wireshark
+- A lab/test network only (never run ARP spoofing tools on networks you don't own or have explicit permission to test)
+- Optional: a controlled test setup with two VMs to observe normal vs. spoofed ARP traffic
+
+## Background
+ARP (Address Resolution Protocol) maps IP addresses to MAC addresses on a local network — but it has no built-in authentication. An attacker can send forged ARP replies claiming to own another device's IP address, tricking devices into sending traffic to the attacker instead (ARP spoofing/poisoning). This is a common first step in MITM attacks.
+
+## Steps
+
+### Part 1: Baseline ARP Behavior
+1. Start a Wireshark capture.
+2. Filter with: `arp`
+3. Observe normal ARP behavior: a device sends an ARP Request ("Who has X.X.X.X? Tell Y.Y.Y.Y") and gets one ARP Reply from the legitimate owner.
+
+### Part 2: Recognizing Spoofing Indicators
+Even without running an attack tool yourself, you can learn to recognize the signatures in a capture (your own, or a sample pcap):
+
+1. **Duplicate/conflicting ARP replies** — multiple devices claiming the same IP address with different MAC addresses.
+2. **Unsolicited ARP replies** — an ARP Reply with no matching ARP Request beforehand ("gratuitous ARP" used maliciously).
+3. **Rapid, repeated ARP replies** — spoofing tools often flood the network with replies to keep the poisoned mapping fresh.
+4. Filter with: `arp.opcode == 2` to isolate ARP replies and review the source MAC/IP pairs for inconsistencies.
+
+### Part 3: Cross-Referencing the MAC Table
+1. Use Wireshark's **Statistics → Endpoints** to list all MAC addresses seen in the capture.
+2. Check if any single MAC address is associated with more than one IP address unexpectedly — a possible spoofing indicator.
+3. Compare against known legitimate devices (e.g., your router's real MAC, found via `arp -a` on a trusted machine).
+
+## Key Filters
+| Filter | Purpose |
+|---|---|
+| `arp` | Show all ARP traffic |
+| `arp.opcode == 1` | ARP Requests |
+| `arp.opcode == 2` | ARP Replies |
+| `arp.duplicate-address-detected` | Wireshark's built-in flag for conflicting ARP replies |
+
+## Analysis Questions
+1. Why does ARP have no authentication mechanism, and what does that make it vulnerable to?
+2. What's the difference between a normal gratuitous ARP (e.g., after a device reboots) and a malicious one?
+3. How would you distinguish a legitimate IP change (e.g., DHCP renewal) from ARP spoofing in a capture?
+4. What defenses exist against ARP spoofing (e.g., static ARP entries, Dynamic ARP Inspection on switches)?
+
+## Security Note
+This lab is for detection and analysis only. Never run ARP spoofing tools (e.g., arpspoof, Ettercap) on networks you don't own or lack explicit written permission to test — doing so on shared or production networks is illegal in most jurisdictions and can disrupt other users' connectivity.
+EOF
+
+# Stage, commit, and push
+git add labs/10-arp-spoofing-mitm.md
+git commit -m "Add Lab 10: ARP Spoofing / MITM Detection"
+git push origin main
