@@ -1,0 +1,69 @@
+# Navigate to your repo
+cd Wireshark
+
+# Write the file content directly
+cat > labs/14-vpn-ipsec-overview.md << 'EOF'
+# Lab 14: VPN/IPSec Traffic Overview
+
+## Objective
+Understand how VPN protocols (especially IPSec) protect traffic at the packet level, and learn to identify VPN traffic characteristics in Wireshark even though the payload itself is encrypted.
+
+## Tools
+- Wireshark
+- Access to a VPN connection you control (e.g., a personal VPN client, or a lab-configured IPSec tunnel between two VMs)
+
+## Background
+VPNs create an encrypted tunnel between two endpoints, protecting data in transit. IPSec is one of the most common VPN protocols, operating at the network layer using two main components:
+- **IKE (Internet Key Exchange)** — negotiates the secure connection and exchanges keys
+- **ESP (Encapsulating Security Payload)** — encrypts and carries the actual tunneled data
+
+Because the payload is encrypted, Wireshark can't show you the tunneled content — but it can still reveal the negotiation process and traffic metadata.
+
+## Steps
+
+### Part 1: Capturing the IKE Negotiation
+1. Start a Wireshark capture.
+2. Connect to your VPN.
+3. Stop the capture once the connection is established.
+4. Filter with: `isakmp` (older IKEv1) or `ikev2`
+
+**What to observe:**
+- The multi-phase handshake where both sides negotiate encryption algorithms and exchange keys
+- Source/destination IPs of the VPN endpoints
+- No readable payload data — only negotiation parameters
+
+### Part 2: Observing ESP Traffic
+1. After the tunnel is established, generate some traffic through the VPN (e.g., browse a site).
+2. Filter with: `esp`
+
+**What to observe:**
+- ESP packets carrying the encrypted payload — the actual content (URLs, data) is not visible
+- Packet sizes and timing patterns are still visible, even though content isn't
+
+### Part 3: Comparing Tunneled vs. Direct Traffic
+1. Temporarily disconnect the VPN and repeat the same browsing activity.
+2. Compare the capture: without the VPN, you'll see the destination server's real IP and (for HTTP) readable content; with the VPN, you'll only see your VPN server's IP as the destination.
+
+## Key Filters
+| Filter | Purpose |
+|---|---|
+| `isakmp` | IKEv1 negotiation traffic |
+| `ikev2` | IKEv2 negotiation traffic |
+| `esp` | Encrypted VPN payload traffic |
+| `udp.port == 500` | IKE traffic (key exchange) |
+| `udp.port == 4500` | NAT-Traversal IPSec traffic |
+
+## Analysis Questions
+1. Why can Wireshark see the IKE negotiation but not the ESP payload content?
+2. What metadata is still visible in VPN traffic even when the payload is encrypted (and why does that matter for privacy)?
+3. What's the difference between IKE and ESP in the IPSec architecture?
+4. Why might an organization want to inspect VPN traffic metadata (timing, volume) even without decrypting the content?
+
+## Security Note
+This lab only requires observing your own legitimate VPN connection — no interception of others' traffic is needed or permitted. Understanding what metadata remains visible even under encryption is a useful concept for both defenders (traffic analysis) and privacy-conscious users (metadata leakage awareness).
+EOF
+
+# Stage, commit, and push
+git add labs/14-vpn-ipsec-overview.md
+git commit -m "Add Lab 14: VPN/IPSec Traffic Overview"
+git push origin main
