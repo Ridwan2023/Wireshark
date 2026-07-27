@@ -1,0 +1,69 @@
+# Navigate to your repo
+cd Wireshark
+
+# Write the file content directly
+cat > labs/11-ftp-telnet-cleartext.md << 'EOF'
+# Lab 11: FTP/Telnet — Cleartext Credential Capture
+
+## Objective
+Demonstrate why unencrypted protocols like FTP and Telnet are insecure by capturing and analyzing cleartext credentials in Wireshark, reinforcing the case for encrypted alternatives (SFTP, SSH).
+
+## Tools
+- Wireshark
+- Access to an FTP or Telnet server **you own or have explicit permission to test** (e.g., a local VM running vsftpd, or a Telnet test server in your own lab)
+
+## Background
+FTP and Telnet were designed before encryption was standard practice — both send data, including usernames and passwords, in plaintext. Anyone capturing traffic on the same network segment can read these credentials directly.
+
+## Steps
+
+### Part 1: Capturing an FTP Login
+1. Start a Wireshark capture.
+2. Connect to your test FTP server: `ftp <server-ip>`
+3. Log in with a test username and password (never use real credentials for this exercise).
+4. Stop the capture.
+5. Filter with: `ftp`
+
+**What to observe:**
+- `USER <username>` command sent in plaintext
+- `PASS <password>` command sent in plaintext immediately after
+- Use Wireshark's **Follow → TCP Stream** on one of these packets to see the full login exchange as a readable conversation
+
+### Part 2: Capturing a Telnet Login
+1. Start a new capture.
+2. Connect to your test Telnet server: `telnet <server-ip>`
+3. Log in with test credentials.
+4. Stop the capture.
+5. Filter with: `telnet`
+
+**What to observe:**
+- Because Telnet sends data character-by-character, you'll see many small packets rather than one clean login line
+- Use **Follow → TCP Stream** to reconstruct the full session, including the typed username and password
+
+### Part 3: Comparing to an Encrypted Alternative
+1. If available, repeat the login using SFTP or SSH instead.
+2. Filter with: `ssh` or `ssh || sftp`
+3. Confirm that the payload is encrypted — no readable credentials appear, even with Follow TCP Stream.
+
+## Key Filters
+| Filter | Purpose |
+|---|---|
+| `ftp` | Show FTP control channel traffic |
+| `ftp-data` | Show FTP data transfer traffic |
+| `telnet` | Show Telnet traffic |
+| `ssh` | Show SSH traffic (for comparison) |
+
+## Analysis Questions
+1. Why can a network sniffer read FTP/Telnet credentials but not SSH credentials?
+2. What is the difference between the FTP control channel and the FTP data channel?
+3. Why does Telnet traffic appear as many small packets instead of one message?
+4. What modern alternatives exist to replace FTP and Telnet, and why are they preferred?
+
+## Security Note
+This lab must only be performed against systems you own or have explicit written authorization to test. Capturing credentials on networks or systems without permission is illegal. The purpose here is defensive awareness — understanding why cleartext protocols are deprecated in favor of encrypted ones.
+EOF
+
+# Stage, commit, and push
+git add labs/11-ftp-telnet-cleartext.md
+git commit -m "Add Lab 11: FTP/Telnet Cleartext Credential Capture"
+git push origin main
