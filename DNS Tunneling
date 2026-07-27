@@ -1,0 +1,61 @@
+# Navigate to your repo
+cd Wireshark
+
+# Write the file content directly
+cat > labs/12-dns-tunneling-detection.md << 'EOF'
+# Lab 12: DNS Tunneling / Suspicious DNS Detection
+
+## Objective
+Understand how DNS can be abused to exfiltrate data or maintain covert command-and-control (C2) channels, and learn to recognize suspicious DNS patterns in Wireshark.
+
+## Tools
+- Wireshark
+- Sample pcap files of known DNS tunneling traffic (widely available from security research repositories) or a controlled lab test using a tool like `dnscat2` **on a network you own**
+
+## Background
+DNS is almost always allowed through firewalls, which makes it an attractive covert channel. Attackers encode data into DNS queries (subdomains) and responses (TXT/NULL records) to exfiltrate data or communicate with malware, bypassing traditional security controls that don't inspect DNS closely.
+
+## Steps
+
+### Part 1: Baseline Normal DNS
+1. Start a Wireshark capture.
+2. Browse a few normal websites.
+3. Filter with: `dns`
+4. Observe typical query patterns: short domain names, standard record types (A, AAAA, CNAME), quick request/response pairs.
+
+### Part 2: Identifying Suspicious Patterns
+Review the capture (or a sample tunneling pcap) for these red flags:
+
+1. **Unusually long subdomain names** — tunneling tools encode data into subdomains, often 50+ characters of random-looking characters (e.g., `a8f3k2j9d...malicious-domain.com`)
+2. **High volume of DNS queries to a single domain** in a short time window — normal browsing rarely generates this
+3. **Uncommon record types** — heavy use of TXT or NULL records, which are rarely needed for normal browsing
+4. **Queries to domains with high entropy** (random-looking strings) rather than readable words
+
+### Part 3: Filtering and Measuring
+1. Filter with: `dns.qry.name.len > 50` to catch abnormally long query names.
+2. Use **Statistics → DNS** to see query type distribution and spot unusual patterns (e.g., a spike in TXT queries).
+3. Use **Statistics → Conversations** to identify if one domain is receiving a disproportionate number of queries.
+
+## Key Filters
+| Filter | Purpose |
+|---|---|
+| `dns` | Show all DNS traffic |
+| `dns.qry.name.len > 50` | Abnormally long query names |
+| `dns.qry.type == 16` | TXT record queries |
+| `dns.qry.type == 10` | NULL record queries |
+| `dns.flags.response == 0` | DNS queries only (not responses) |
+
+## Analysis Questions
+1. Why is DNS an attractive channel for attackers to bypass firewalls?
+2. What makes a subdomain name "suspicious" versus normal in DNS traffic?
+3. Why would an attacker prefer TXT or NULL records over standard A records for tunneling?
+4. What detection strategies (besides manual inspection) could scale this analysis across large volumes of traffic (e.g., entropy scoring, frequency analysis)?
+
+## Security Note
+Do not run DNS tunneling tools against production DNS infrastructure or networks you don't own. Use sample pcaps from reputable security research sources, or a fully isolated lab environment, to study these patterns safely.
+EOF
+
+# Stage, commit, and push
+git add labs/12-dns-tunneling-detection.md
+git commit -m "Add Lab 12: DNS Tunneling / Suspicious DNS Detection"
+git push origin main
